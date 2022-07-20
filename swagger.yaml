@@ -1,718 +1,352 @@
----
 swagger: "2.0"
 info:
-  description: "This is a sample server Petstore server.  You can find out more about\
-    \ Swagger at [http://swagger.io](http://swagger.io) or on [irc.freenode.net, #swagger](http://swagger.io/irc/).\
-    \  For this sample, you can use the api key `special-key` to test the authorization\
-    \ filters."
-  version: "1.0.5"
-  title: "Swagger Petstore"
-  termsOfService: "http://swagger.io/terms/"
+  description: "Api para fazer checkout"
+  version: "1.0.0"
+  title: "Checkout"
   contact:
-    email: "apiteam@swagger.io"
-  license:
-    name: "Apache 2.0"
-    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
-host: "petstore.swagger.io"
-basePath: "/v2"
+    email: "contato@adaga.cc"
+
+host: "localhost"
+
 tags:
-- name: "pet"
-  description: "Everything about your Pets"
-  externalDocs:
-    description: "Find out more"
-    url: "http://swagger.io"
-- name: "store"
-  description: "Access to Petstore orders"
-- name: "user"
-  description: "Operations about user"
-  externalDocs:
-    description: "Find out more about our store"
-    url: "http://swagger.io"
+- name: "Checkout"
+  description: "API de checkout"
+
 schemes:
 - "https"
 - "http"
 paths:
-  /pet/{petId}/uploadImage:
+  /checkout:
     post:
       tags:
-      - "pet"
-      summary: "uploads an image"
-      description: ""
-      operationId: "uploadFile"
-      consumes:
-      - "multipart/form-data"
-      produces:
-      - "application/json"
-      parameters:
-      - name: "petId"
-        in: "path"
-        description: "ID of pet to update"
-        required: true
-        type: "integer"
-        format: "int64"
-      - name: "additionalMetadata"
-        in: "formData"
-        description: "Additional data to pass to server"
-        required: false
-        type: "string"
-      - name: "file"
-        in: "formData"
-        description: "file to upload"
-        required: false
-        type: "file"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/ApiResponse"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
-  /pet:
-    post:
-      tags:
-      - "pet"
-      summary: "Add a new pet to the store"
-      description: ""
-      operationId: "addPet"
+      - "Checkout"
+      summary: "Criar uma fatura de checkout"
+      description: "Usado para criar uma fatura que pode ser paga por API ou por nossa interface de fatura (paymentLink)"
       consumes:
       - "application/json"
-      - "application/xml"
       produces:
       - "application/json"
-      - "application/xml"
       parameters:
       - in: "body"
         name: "body"
-        description: "Pet object that needs to be added to the store"
+        description: "Request para criação de cobrança"
         required: true
         schema:
-          $ref: "#/definitions/Pet"
+          $ref: "#/definitions/Checkout"
       responses:
-        405:
-          description: "Invalid input"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
-    put:
+        "200": 
+          description: Resposta
+          schema:
+            $ref: "#/response/CheckoutResponse"
+        "400":
+          description: "Dados de INPUT inválido"
+        "500":
+          description: "Server internal error"
+  /checkout/read/{checkoutId}:
+    get:
       tags:
-      - "pet"
-      summary: "Update an existing pet"
-      description: ""
-      operationId: "updatePet"
+      - "Checkout"
+      summary: "Consultar um checkout"
+      description: "Usado para consultar um checkout"
+      parameters:
+      - name: "checkoutId"
+        in: "path"
+        description: "Consultar dados do checkout"
+        required: true
+        type: "string"
+      responses:
+        "200": 
+          description: Resposta
+          schema:
+            $ref: "#/response/ReadCheckoutResponse"
+        "404":
+          description: "Checkout não encontrado"
+        "500":
+          description: "Server internal error"
+  /checkout/card-payment:
+    post:
+      tags:
+      - "Checkout"
+      summary: "Pagar um checkout com cartão"
+      description: "API para efetuar o pagamento do check-out com cartão"
       consumes:
       - "application/json"
-      - "application/xml"
       produces:
       - "application/json"
-      - "application/xml"
       parameters:
       - in: "body"
         name: "body"
-        description: "Pet object that needs to be added to the store"
+        description: "Request para criação de cobrança"
         required: true
         schema:
-          $ref: "#/definitions/Pet"
+          $ref: "#/definitions/CardPayment"
       responses:
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Pet not found"
-        405:
-          description: "Validation exception"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
-  /pet/findByStatus:
-    get:
-      tags:
-      - "pet"
-      summary: "Finds Pets by status"
-      description: "Multiple status values can be provided with comma separated strings"
-      operationId: "findPetsByStatus"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "status"
-        in: "query"
-        description: "Status values that need to be considered for filter"
-        required: true
-        type: "array"
-        items:
-          type: "string"
-          enum:
-          - "available"
-          - "pending"
-          - "sold"
-          default: "available"
-        collectionFormat: "multi"
-      responses:
-        200:
-          description: "successful operation"
+        "200": 
+          description: Resposta
           schema:
-            type: "array"
-            items:
-              $ref: "#/definitions/Pet"
-        400:
-          description: "Invalid status value"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
-  /pet/findByTags:
-    get:
-      tags:
-      - "pet"
-      summary: "Finds Pets by tags"
-      description: "Multiple tags can be provided with comma separated strings. Use\
-        \ tag1, tag2, tag3 for testing."
-      operationId: "findPetsByTags"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "tags"
-        in: "query"
-        description: "Tags to filter by"
-        required: true
-        type: "array"
-        items:
-          type: "string"
-        collectionFormat: "multi"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            type: "array"
-            items:
-              $ref: "#/definitions/Pet"
-        400:
-          description: "Invalid tag value"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
-      deprecated: true
-  /pet/{petId}:
-    get:
-      tags:
-      - "pet"
-      summary: "Find pet by ID"
-      description: "Returns a single pet"
-      operationId: "getPetById"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "petId"
-        in: "path"
-        description: "ID of pet to return"
-        required: true
-        type: "integer"
-        format: "int64"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/Pet"
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Pet not found"
-      security:
-      - api_key: []
+            $ref: "#/response/CardPaymentResponse"
+            
+        "400":
+          description: "Dados de INPUT inválido"
+        "412":
+          description: "Checkout já pago | Checkout já cancelado | Checkout ainda está sendo processado | Checkout está em contestação | Quantidade de parcelas excede o limite pré-definido"
+        "500":
+          description: "Server internal error"
+
+  /checkout-change-status:
     post:
       tags:
-      - "pet"
-      summary: "Updates a pet in the store with form data"
-      description: ""
-      operationId: "updatePetWithForm"
+      - "Notificação Webhook"
+      summary: "Notificar a alteração do status de um checkout"
+      description: "Notificamos a alteração do status de um checkout"
       consumes:
-      - "application/x-www-form-urlencoded"
+      - "application/json"
       produces:
       - "application/json"
-      - "application/xml"
       parameters:
-      - name: "petId"
-        in: "path"
-        description: "ID of pet that needs to be updated"
-        required: true
-        type: "integer"
-        format: "int64"
-      - name: "name"
-        in: "formData"
-        description: "Updated name of the pet"
-        required: false
-        type: "string"
-      - name: "status"
-        in: "formData"
-        description: "Updated status of the pet"
-        required: false
-        type: "string"
-      responses:
-        405:
-          description: "Invalid input"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
-    delete:
-      tags:
-      - "pet"
-      summary: "Deletes a pet"
-      description: ""
-      operationId: "deletePet"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "api_key"
+      - name: "Secret"
         in: "header"
+        description: "notificationSecret que foi fornecido na criação do checkout"
         required: false
         type: "string"
-      - name: "petId"
-        in: "path"
-        description: "Pet id to delete"
-        required: true
-        type: "integer"
-        format: "int64"
-      responses:
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Pet not found"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
-  /store/order:
-    post:
-      tags:
-      - "store"
-      summary: "Place an order for a pet"
-      description: ""
-      operationId: "placeOrder"
-      consumes:
-      - "application/json"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
       - in: "body"
         name: "body"
-        description: "order placed for purchasing the pet"
+        description: "Corpo da request que enviamos"
         required: true
         schema:
-          $ref: "#/definitions/Order"
+          $ref: "#/definitions/Webhook"
+          
       responses:
-        200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/Order"
-        400:
-          description: "Invalid Order"
-  /store/order/{orderId}:
-    get:
-      tags:
-      - "store"
-      summary: "Find purchase order by ID"
-      description: "For valid response try integer IDs with value >= 1 and <= 10.\
-        \ Other values will generated exceptions"
-      operationId: "getOrderById"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "orderId"
-        in: "path"
-        description: "ID of pet that needs to be fetched"
-        required: true
-        type: "integer"
-        maximum: 10
-        minimum: 1
-        format: "int64"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/Order"
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Order not found"
-    delete:
-      tags:
-      - "store"
-      summary: "Delete purchase order by ID"
-      description: "For valid response try integer IDs with positive integer value.\
-        \ Negative or non-integer values will generate API errors"
-      operationId: "deleteOrder"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "orderId"
-        in: "path"
-        description: "ID of the order that needs to be deleted"
-        required: true
-        type: "integer"
-        minimum: 1
-        format: "int64"
-      responses:
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Order not found"
-  /store/inventory:
-    get:
-      tags:
-      - "store"
-      summary: "Returns pet inventories by status"
-      description: "Returns a map of status codes to quantities"
-      operationId: "getInventory"
-      produces:
-      - "application/json"
-      parameters: []
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            type: "object"
-            additionalProperties:
-              type: "integer"
-              format: "int32"
-      security:
-      - api_key: []
-  /user/createWithArray:
-    post:
-      tags:
-      - "user"
-      summary: "Creates list of users with given input array"
-      description: ""
-      operationId: "createUsersWithArrayInput"
-      consumes:
-      - "application/json"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "List of user object"
-        required: true
-        schema:
-          type: "array"
-          items:
-            $ref: "#/definitions/User"
-      responses:
-        default:
-          description: "successful operation"
-  /user/createWithList:
-    post:
-      tags:
-      - "user"
-      summary: "Creates list of users with given input array"
-      description: ""
-      operationId: "createUsersWithListInput"
-      consumes:
-      - "application/json"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "List of user object"
-        required: true
-        schema:
-          type: "array"
-          items:
-            $ref: "#/definitions/User"
-      responses:
-        default:
-          description: "successful operation"
-  /user/{username}:
-    get:
-      tags:
-      - "user"
-      summary: "Get user by user name"
-      description: ""
-      operationId: "getUserByName"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "username"
-        in: "path"
-        description: "The name that needs to be fetched. Use user1 for testing. "
-        required: true
-        type: "string"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/User"
-        400:
-          description: "Invalid username supplied"
-        404:
-          description: "User not found"
-    put:
-      tags:
-      - "user"
-      summary: "Updated user"
-      description: "This can only be done by the logged in user."
-      operationId: "updateUser"
-      consumes:
-      - "application/json"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "username"
-        in: "path"
-        description: "name that need to be updated"
-        required: true
-        type: "string"
-      - in: "body"
-        name: "body"
-        description: "Updated user object"
-        required: true
-        schema:
-          $ref: "#/definitions/User"
-      responses:
-        400:
-          description: "Invalid user supplied"
-        404:
-          description: "User not found"
-    delete:
-      tags:
-      - "user"
-      summary: "Delete user"
-      description: "This can only be done by the logged in user."
-      operationId: "deleteUser"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "username"
-        in: "path"
-        description: "The name that needs to be deleted"
-        required: true
-        type: "string"
-      responses:
-        400:
-          description: "Invalid username supplied"
-        404:
-          description: "User not found"
-  /user/login:
-    get:
-      tags:
-      - "user"
-      summary: "Logs user into the system"
-      description: ""
-      operationId: "loginUser"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "username"
-        in: "query"
-        description: "The user name for login"
-        required: true
-        type: "string"
-      - name: "password"
-        in: "query"
-        description: "The password for login in clear text"
-        required: true
-        type: "string"
-      responses:
-        200:
-          description: "successful operation"
-          headers:
-            X-Expires-After:
-              type: "string"
-              format: "date-time"
-              description: "date in UTC when token expires"
-            X-Rate-Limit:
-              type: "integer"
-              format: "int32"
-              description: "calls per hour allowed by the user"
-          schema:
-            type: "string"
-        400:
-          description: "Invalid username/password supplied"
-  /user/logout:
-    get:
-      tags:
-      - "user"
-      summary: "Logs out current logged in user session"
-      description: ""
-      operationId: "logoutUser"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters: []
-      responses:
-        default:
-          description: "successful operation"
-  /user:
-    post:
-      tags:
-      - "user"
-      summary: "Create user"
-      description: "This can only be done by the logged in user."
-      operationId: "createUser"
-      consumes:
-      - "application/json"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "Created user object"
-        required: true
-        schema:
-          $ref: "#/definitions/User"
-      responses:
-        default:
-          description: "successful operation"
-securityDefinitions:
-  api_key:
-    type: "apiKey"
-    name: "api_key"
-    in: "header"
-  petstore_auth:
-    type: "oauth2"
-    authorizationUrl: "https://petstore.swagger.io/oauth/authorize"
-    flow: "implicit"
-    scopes:
-      read:pets: "read your pets"
-      write:pets: "modify pets in your account"
-definitions:
-  ApiResponse:
+        "200": 
+          description: Resposta
+response:
+  CardPaymentResponse:
     type: "object"
-    properties:
-      code:
-        type: "integer"
-        format: "int32"
-      type:
-        type: "string"
-      message:
-        type: "string"
-  Category:
-    type: "object"
+    required:
+      - id
+      - checkoutId
+      - status
     properties:
       id:
-        type: "integer"
-        format: "int64"
-      name:
         type: "string"
-    xml:
-      name: "Category"
-  Pet:
+        description: "ID do pagamento"
+      checkoutId:
+        type: "string"
+        description: "ID do checkout"
+      status:
+        type: string
+        description: "Status do pagamento"
+        enum:
+          - pending_payment
+          - processing
+          - paid
+          - refunded
+          - rejected
+          - canceled
+          - in_dispute  
+      
+  ReadCheckoutResponse:
+    type: "object"
+    required:
+      - id
+      - amount
+      - maxInstallments
+      - qrCode
+      - qrCodeJPEGBase64
+      - status
+    properties:
+      id:
+        type: "string"
+        description: "ID do checkout"
+      amount:
+        type: "integer"
+        description: "Valor em centavos, exemplo R$10,00 = 1000"
+        format: "int64"
+      maxInstallments:
+        type: "integer"
+        description: "Define um limite máximo de parcelas que nossa API permitirá pagamento, o parcelamento só funcionará em caso de pagamento com cartão, pois o pagamento via PIX sempre será a vista"
+        minimum: 1
+      qrCode:
+        type: "string"
+        description: "Conteúdo do QRCode"
+      qrCodeJPEGBase64:
+        type: "string"
+        description: "Imagem (JPEG) do QRCode em Base64"
+      status:
+        type: string
+        description: "Status do pagamento"
+        enum:
+          - pending_payment
+          - processing
+          - paid
+          - refunded
+          - rejected
+          - canceled
+          - in_dispute
+      
+  CheckoutResponse:
+    type: "object"
+    required:
+      - id
+      - paymentLink
+      - qrCode
+      - qrCodeJPEGBase64
+    properties:
+      id:
+        type: "string"
+        description: "ID do checkout"
+      paymentLink:
+        type: "string"
+        description: "Link da fatura"
+      qrCode:
+        type: "string"
+        description: "Conteúdo do QRCode"
+      qrCodeJPEGBase64:
+        type: "string"
+        description: "Imagem (JPEG) do QRCode em Base64"
+        
+
+definitions:
+  CardPayment:
+    type: "object"
+    required:
+      - cardHolder
+      - installments
+      - cardToken
+      - payerEmail
+      - payerDocument
+    properties:
+      checkoutId:
+        type: string
+        description: ID o checkout (Se enviar null, será criado um novo checkout)
+      amount:
+        type: "integer"
+        description: "Valor em centavos, exemplo R$10,00 = 1000 (Obrigatório se o checkoutId for null)"
+        format: "int64"
+      notificationUrl:
+        type: "string"
+        description: "É a URL onde notificaremos alteração do status da fatura (Obrigatório se o checkoutId for null)"
+      notificationSecret:
+        type: "string"
+        description: "Enviaremos esse valor no HEADER da notificação para que seja confimardo a nossa autenticidade na notificação (Obrigatório se o checkoutId for null)"
+      cardHolder:
+        type: string
+        description: Nome que está no cartão
+      installments:
+        type: integer
+        description: Quantidade de parcelas (Não pode ser maior que o maxInstallments passado na criação)
+        minimum: 1
+      cardToken:
+        type: string
+        description: Token do cartão gerado com a SDK
+      payerEmail:
+        type: string
+        description: E-mail do pagador
+      payerDocument:
+        type: string
+        description: CPF/CNPJ do pagador
+   
+  Webhook:
+    type: "object"
+    required:
+    - "checkoutId"
+    - "status"
+    properties:
+      checkoutId:
+        type: "string"
+        description: "Id do checkout"
+      refundAmount:
+        type: "integer"
+        description: "Em caso de estorno é retornado o valor da devolução"
+        format: "int64"
+      status:
+        type: "string"
+        description: "Novo status"
+        enum:
+          - pending_payment
+          - processing
+          - paid
+          - refunded
+          - rejected
+          - canceled
+          - in_dispute  
+        
+  Checkout:
+    type: "object"
+    required:
+    - "amount"
+    - "maxInstallments"
+    - "notificationUrl"
+    - "notificationSecret"
+    - "payer"
+    properties:
+      amount:
+        type: "integer"
+        description: "Valor em centavos, exemplo R$10,00 = 1000"
+        format: "int64"
+      description:
+        type: "string"
+        description: "Descrição da cobrança"
+      maxInstallments:
+        type: "integer"
+        description: "Define um limite máximo de parcelas que nossa API permitirá pagamento, o parcelamento só funcionará em caso de pagamento com cartão, pois o pagamento via PIX sempre será a vista"
+        minimum: 1
+      notificationUrl:
+        type: "string"
+        description: "É a URL onde notificaremos alteração do status da fatura"
+      notificationSecret:
+        type: "string"
+        description: "Enviaremos esse valor no HEADER da notificação para que seja confimardo a nossa autenticidade na notificação"
+      payer:
+        $ref: "#/definitions/Payer"
+        
+  Payer:
     type: "object"
     required:
     - "name"
-    - "photoUrls"
+    - "email"
+    - "document"
+    - "address"
     properties:
-      id:
-        type: "integer"
-        format: "int64"
-      category:
-        $ref: "#/definitions/Category"
       name:
-        type: "string"
-        example: "doggie"
-      photoUrls:
-        type: "array"
-        xml:
-          wrapped: true
-        items:
-          type: "string"
-          xml:
-            name: "photoUrl"
-      tags:
-        type: "array"
-        xml:
-          wrapped: true
-        items:
-          xml:
-            name: "tag"
-          $ref: "#/definitions/Tag"
-      status:
-        type: "string"
-        description: "pet status in the store"
-        enum:
-        - "available"
-        - "pending"
-        - "sold"
-    xml:
-      name: "Pet"
-  Tag:
-    type: "object"
-    properties:
-      id:
-        type: "integer"
-        format: "int64"
-      name:
-        type: "string"
-    xml:
-      name: "Tag"
-  Order:
-    type: "object"
-    properties:
-      id:
-        type: "integer"
-        format: "int64"
-      petId:
-        type: "integer"
-        format: "int64"
-      quantity:
-        type: "integer"
-        format: "int32"
-      shipDate:
-        type: "string"
-        format: "date-time"
-      status:
-        type: "string"
-        description: "Order Status"
-        enum:
-        - "placed"
-        - "approved"
-        - "delivered"
-      complete:
-        type: "boolean"
-    xml:
-      name: "Order"
-  User:
-    type: "object"
-    properties:
-      id:
-        type: "integer"
-        format: "int64"
-      username:
-        type: "string"
-      firstName:
-        type: "string"
-      lastName:
-        type: "string"
+        type: string
+        description: nome de quem está realizando o pagamento
       email:
+        type: string
+        description: email do pagador
+      document:
+        type: string
+        description: CPF/CNPJ de quem está realizando o pagamento
+      address:
+        $ref: "#/definitions/Address"
+  Address:
+    type: object
+    required:
+    - streetName
+    - streetNumber
+    - zipcode
+    - neighborhood
+    - city
+    - uf
+    properties:
+      streetName: 
         type: "string"
-      password:
+        description: "nome da rua"
+      streetNumber: 
         type: "string"
-      phone:
+        description: "Numéro"
+      zipcode: 
         type: "string"
-      userStatus:
-        type: "integer"
-        format: "int32"
-        description: "User Status"
-    xml:
-      name: "User"
-externalDocs:
-  description: "Find out more about Swagger"
-  url: "http://swagger.io"
+        description: "CEP"
+      neighborhood: 
+        type: "string"
+        description: "Bairro"
+      city: 
+        type: "string"
+        description: "Nome da cidade"
+      uf: 
+        type: "string"
+        example: SP
+        description: "Sigla do estado"
+        minLength: 2
+        maxLength: 2
