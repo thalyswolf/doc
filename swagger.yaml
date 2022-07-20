@@ -162,7 +162,7 @@ response:
         type: "integer"
         description: "Valor em centavos, exemplo R$10,00 = 1000"
         format: "int64"
-      maxInstallments:
+      minInstallments:
         type: "integer"
         description: "Define um limite minimo de parcelas que nossa API permitirá pagamento, o parcelamento só funcionará em caso de pagamento com cartão, pois o pagamento via PIX sempre será a vista"
         minimum: 1
