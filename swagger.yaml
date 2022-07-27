@@ -93,6 +93,67 @@ paths:
         "500":
           description: "Server internal error"
 
+  /vehicle/consult-debit-async:
+    post:
+      tags:
+      - Débitos veiculadores
+      summary: "Criar uma consulta de débitos"
+      description: "Essa consulta é assincrona, porém se os dados já estiverem disponíveis, retornaremos os dados nessa request"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Corpo da request"
+        required: true
+        schema:
+          $ref: "#/definitions/VehicularDebitSearchAsync"
+      responses:
+        "200": 
+          description: Resposta
+          schema:
+            $ref: "#/response/ConsultAsyncResponse"
+        "400": 
+          description: Dados inválidos
+        "500":
+          description: Erro interno
+
+  /vehicle/status-consult/{consultToken}:
+    get:
+      tags:
+      - Débitos veiculadores
+      summary: "Consultar o status de uma consulta"
+      description: "Usado para consultar se a consuta já está pront"
+      parameters:
+      - name: "consultToken"
+        in: "path"
+        required: true
+        type: "string"
+      responses:
+        "200": 
+          description: Resposta
+          schema:
+            $ref: "#/response/ConsultStatusResponse"
+  
+  /vehicle/consult-detail/{consultToken}:
+    get:
+      tags:
+      - Débitos veiculadores
+      summary: "Consultar os detalhes da consulta"
+      description: "Usado para consultar os dados de uma consulta já pronta"
+      parameters:
+      - name: "consultToken"
+        in: "path"
+        required: true
+        type: "string"
+      responses:
+        "200": 
+          description: Resposta
+          schema:
+            $ref: "#/response/ConsultDetailResponse"
+        
   /checkout-change-status:
     post:
       tags:
@@ -208,7 +269,97 @@ response:
       qrCodeJPEGBase64:
         type: "string"
         description: "Imagem (JPEG) do QRCode em Base64"
-        
+  
+  ConsultStatusResponse:
+    type: "object"
+    required:
+      - status
+    properties:
+      status:
+        type: "string"
+        description: "Status da consulta"
+        enum:
+          - processing
+          - finished
+          - expired
+          
+  ConsultDetailResponse:
+    type: "object"
+    required:
+      - plate
+      - debits
+    properties:
+      plate:
+        type: "string"
+        description: "Placa do veículo"
+      debits:
+        type: array
+        description: "Débitos dos veículos"
+        items:
+          $ref: "#/response/DebitResponse"
+          
+  ConsultAsyncResponse:
+    type: "object"
+    required:
+      - tokenConsult
+    properties:
+      tokenConsult:
+        type: "string"
+        description: "Token usado para a consulta dos dados"
+      debits:
+        type: array
+        description: "Se os dados já estiverem disponíveis, será retornado nessa request, caso contrário retornará no somente quando a consulta estiver finalizada"
+        items:
+          $ref: "#/response/DebitResponse"
+  
+  DebitResponse:
+    type: "object"
+    properties:
+      title:
+        type: "string"
+        description: "Titulo do débito"
+      amount:
+        type: "integer"
+        description: "Valor do débito em centavos"
+      description:
+        type: "string"
+        description: "Descrição do débito"
+      dueDate:
+        type: "string"
+        description: "data de vencimento do débito"
+        example: "2022-05-18 00:00:00"
+      fine:
+        type: "integer"
+        description: "Multa por atraso em centavos"
+      interest:
+        type: "integer"
+        description: "Juros em centavos"
+      discount:
+        type: "integer"
+        description: "Desconto em centavos"
+      type:
+        type: "string"
+        description: "tipo de débito"
+        enum:
+          - services
+          - ticket
+          - renainf_ticket
+          - ipva
+          - licensing
+          - ipva_unique
+          - ipva_installment
+          - insurance
+          - expired_insurance
+      year:
+        type: "string"
+        description: "Ano de referência do débito"
+      totalAmount:
+        type: "integer"
+        description: "Valor total dos débitos"
+      required:
+        type: "boolean"
+        description: "Se débito é necessário ser pago para gerar novo document"
+
 
 definitions:
   CardPayment:
@@ -249,7 +400,26 @@ definitions:
       payerDocument:
         type: string
         description: CPF/CNPJ do pagador
-   
+  
+  VehicularDebitSearchAsync:
+    type: object
+    required:
+    - uf
+    - plate
+    - renavam
+    properties:
+      uf:
+        type: "string"
+        description: "Sigla do estado"
+        minLength: 2
+        maxLength: 2
+      plate:
+        type: "string"
+        description: "Placa do veículo"
+      renavam:
+        type: "string"
+        description: "Renavam do veículo"
+  
   Webhook:
     type: "object"
     required:
