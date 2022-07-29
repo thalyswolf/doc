@@ -153,6 +153,10 @@ paths:
           description: Resposta
           schema:
             $ref: "#/response/ConsultDetailResponse"
+        "404": 
+          description: Débito nao encontrado
+        "500": 
+          description: Erro interno
         
   /checkout-change-status:
     post:
@@ -180,6 +184,84 @@ paths:
       responses:
         "200": 
           description: Resposta
+  
+  /payment-vehicular-debit-change-status:
+    post:
+      tags:
+      - "Notificação Webhook"
+      summary: "Notificar a alteração no pagamento de um débito veicular"
+      description: "Notificamos a alteração do status de um pagamento de dédito veicular"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "Secret"
+        in: "header"
+        description: "notificationSecret que foi fornecido na criação do checkout"
+        required: false
+        type: "string"
+      - in: "body"
+        name: "body"
+        description: "Corpo da request que enviamos"
+        required: true
+        schema:
+          $ref: "#/definitions/WebhookVehicularDebit"
+      responses:
+        "200": 
+          description: Resposta
+          
+  /vehicle/payment-debit:
+    post:
+      tags:
+      - Débitos veiculadores
+      summary: "Pagar débitos"
+      description: "Pagar os débitos veiculares <br> <b>Para gerar atualizar o documento é necessário pagar todos os débitos que estão marcados como required</b>"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Corpo da request"
+        required: true
+        schema:
+          $ref: "#/definitions/PaymentVehicleDebit"
+      responses:
+        "200": 
+          description: Resposta
+          schema:
+            $ref: "#/response/PaymentVehicleDebitResponse"
+        "400": 
+          description: Dados inválidos
+        "404": 
+          description: Pagamento nao encontrado
+        "500":
+          description: Erro interno
+          
+  /vehicle/payment-debit/receipt/{paymentId}:
+    get:
+      tags:
+      - Débitos veiculadores
+      summary: "Consultar o recibo de um pagamento"
+      description: "Usado para consultar os dados de uma consulta já pronta"
+      parameters:
+      - name: "paymentId"
+        in: "path"
+        required: true
+        type: "string"
+      responses:
+        "200": 
+          description: Resposta
+          schema:
+            $ref: "#/response/GetReceiptResponse"
+        "404": 
+          description: Pagamento nao encontrado
+        "412": 
+          description: Pagamento ainda não está pago ou foi rejeitado, portanto não tem recibo
+        "500": 
+          description: Erro interno
 response:
   CardPaymentResponse:
     type: "object"
@@ -194,6 +276,9 @@ response:
       checkoutId:
         type: "string"
         description: "ID do checkout"
+      paidAmount:
+        type: "integer"
+        description: "Valor pago em centavos, só será retornado em caso de checkout aprovado"
       status:
         type: string
         description: "Status do pagamento"
@@ -206,6 +291,15 @@ response:
           - canceled
           - in_dispute  
       
+  GetReceiptResponse:
+    type: "object"
+    required:
+      - receipt
+    properties:
+      receipt:
+        type: string
+        description: Recibo no formato de PDF em Base64
+  
   ReadCheckoutResponse:
     type: "object"
     required:
@@ -312,6 +406,14 @@ response:
         items:
           $ref: "#/response/DebitResponse"
   
+  PaymentVehicleDebitResponse:
+    type: "object"
+    properties:
+      id:
+        type: 'string'
+        description: 'ID do pagamento (Será usado no webhook para notificar alterações)'
+  
+  
   DebitResponse:
     type: "object"
     properties:
@@ -401,6 +503,35 @@ definitions:
         type: string
         description: CPF/CNPJ do pagador
   
+  PaymentVehicleDebit:
+    type: object
+    required:
+      - token
+      - checkoutId
+      - notificationUrl
+      - notificationSecret
+      - debits
+    properties:
+      token: 
+        type: "string"
+        description: "Token gerado na consulta"
+      checkoutId:
+        type: "string"
+        description: "ID do checkount de cobrança (serve apenas como um rastreio)"
+      notificationUrl:
+        type: "string"
+        description: "É a URL onde notificaremos alteração do status da fatura"
+      notificationSecret:
+        type: "string"
+        description: "Enviaremos esse valor no HEADER da notificação para que seja confimardo a nossa autenticidade na notificação"
+      debits:
+        type: array
+        description: Array de ID dos débitos que deseja pagar
+        items:
+          type: integer
+      
+      
+  
   VehicularDebitSearchAsync:
     type: object
     required:
@@ -413,6 +544,7 @@ definitions:
         description: "Sigla do estado"
         minLength: 2
         maxLength: 2
+        example: "SP"
       plate:
         type: "string"
         description: "Placa do veículo"
@@ -420,11 +552,42 @@ definitions:
         type: "string"
         description: "Renavam do veículo"
   
+  WebhookVehicularDebit:
+    type: "object"
+    required:
+    - "id"
+    - "status"
+    - "action"
+    properties:
+      id:
+        type: string
+        description: ID do pagamento
+      status:
+        type: string
+        description: Status do pagamento
+        enum:
+          - processing
+          - paid
+          - rejected
+      statusDetail:
+        type: string
+        description: Detalhe da rejeição
+      action:
+        type: string
+        description: Ação
+        enum:
+          - payment_update
+          - checkout_update
+      receipt:
+        type: string 
+        description: PDF do recibo em base64
+  
   Webhook:
     type: "object"
     required:
     - "checkoutId"
     - "status"
+    - "action"
     properties:
       checkoutId:
         type: "string"
@@ -433,6 +596,9 @@ definitions:
         type: "integer"
         description: "Em caso de estorno é retornado o valor da devolução"
         format: "int64"
+      paidAmount:
+        type: "integer"
+        description: "Valor pago em centavos, só será retornado em caso de checkout aprovado"
       status:
         type: "string"
         description: "Novo status"
@@ -443,7 +609,13 @@ definitions:
           - refunded
           - rejected
           - canceled
-          - in_dispute  
+          - in_dispute
+      action:
+        type: string
+        description: Ação
+        enum:
+          - payment_update
+          - checkout_update
         
   Checkout:
     type: "object"
