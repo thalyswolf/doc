@@ -155,6 +155,8 @@ paths:
             $ref: "#/response/ConsultDetailResponse"
         "404": 
           description: Débito nao encontrado
+        "412": 
+          description: Débito ainda está processando 
         "500": 
           description: Erro interno
         
