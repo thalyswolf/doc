@@ -307,9 +307,8 @@ response:
     required:
       - id
       - amount
+      - minInstallments
       - maxInstallments
-      - qrCode
-      - qrCodeJPEGBase64
       - status
     properties:
       id:
@@ -350,8 +349,6 @@ response:
     required:
       - id
       - paymentLink
-      - qrCode
-      - qrCodeJPEGBase64
     properties:
       id:
         type: "string"
@@ -472,8 +469,7 @@ definitions:
       - cardHolder
       - installments
       - cardToken
-      - payerEmail
-      - payerDocument
+      - payer
     properties:
       checkoutId:
         type: string
@@ -491,6 +487,12 @@ definitions:
       cardHolder:
         type: string
         description: Nome que está no cartão
+      paymentWith:
+        type: string
+        description: Indica de é pagamento no cartão de débito ou de crédito
+        enum:
+          - credit_card
+          - debit_card
       installments:
         type: integer
         description: Quantidade de parcelas (Não pode ser maior que o maxInstallments passado na criação)
@@ -498,12 +500,8 @@ definitions:
       cardToken:
         type: string
         description: Token do cartão gerado com a SDK
-      payerEmail:
-        type: string
-        description: E-mail do pagador
-      payerDocument:
-        type: string
-        description: CPF/CNPJ do pagador
+      payer:
+        $ref: "#/definitions/Payer"
   
   PaymentVehicleDebit:
     type: object
@@ -627,6 +625,7 @@ definitions:
     - "notificationUrl"
     - "notificationSecret"
     - "payer"
+    - "generateQrCode"
     properties:
       amount:
         type: "integer"
@@ -635,6 +634,9 @@ definitions:
       description:
         type: "string"
         description: "Descrição da cobrança"
+      generateQrCode:
+        type: "boolean"
+        description: "Se deve ou não gerar o QRCode"
       minInstallments:
         type: "integer"
         description: "Define um limite minimo de parcelas que nossa API permitirá pagamento, o parcelamento só funcionará em caso de pagamento com cartão, pois o pagamento via PIX sempre será a vista"
@@ -653,12 +655,14 @@ definitions:
         $ref: "#/definitions/Payer"
         
   Payer:
+    description: No caso do pagamento de uma fatura que já foi gerado, somente o campo <b>email</b> e <b>document</b> são obrigatórios, tornando os demais opcionais. 
     type: "object"
     required:
     - "name"
     - "email"
     - "document"
     - "address"
+    - "phone"
     properties:
       name:
         type: string
@@ -666,6 +670,9 @@ definitions:
       email:
         type: string
         description: email do pagador
+      phone:
+        type: string
+        description: Telefone do usuário
       document:
         type: string
         description: CPF/CNPJ de quem está realizando o pagamento
