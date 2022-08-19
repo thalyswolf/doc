@@ -92,11 +92,10 @@ paths:
           description: "Checkout já pago | Checkout já cancelado | Checkout ainda está sendo processado | Checkout está em contestação | Quantidade de parcelas excede o limite pré-definido"
         "500":
           description: "Server internal error"
-
   /vehicle/consult-debit-async:
     post:
       tags:
-      - Débitos veiculadores
+      - Débitos veiculares
       summary: "Criar uma consulta de débitos"
       description: "Essa consulta é assincrona, porém se os dados já estiverem disponíveis, retornaremos os dados nessa request"
       consumes:
@@ -119,7 +118,6 @@ paths:
           description: Dados inválidos
         "500":
           description: Erro interno
-
   /vehicle/status-consult/{consultToken}:
     get:
       tags:
@@ -136,7 +134,6 @@ paths:
           description: Resposta
           schema:
             $ref: "#/response/ConsultStatusResponse"
-  
   /vehicle/consult-detail/{consultToken}:
     get:
       tags:
@@ -159,7 +156,6 @@ paths:
           description: Débito ainda está processando 
         "500": 
           description: Erro interno
-        
   /checkout-change-status:
     post:
       tags:
@@ -186,7 +182,6 @@ paths:
       responses:
         "200": 
           description: Resposta
-  
   /payment-vehicular-debit-change-status:
     post:
       tags:
@@ -212,7 +207,6 @@ paths:
       responses:
         "200": 
           description: Resposta
-          
   /vehicle/payment-debit:
     post:
       tags:
@@ -241,7 +235,6 @@ paths:
           description: Pagamento nao encontrado
         "500":
           description: Erro interno
-          
   /vehicle/payment-debit/receipt/{paymentId}:
     get:
       tags:
@@ -264,6 +257,62 @@ paths:
           description: Pagamento ainda não está pago ou foi rejeitado, portanto não tem recibo
         "500": 
           description: Erro interno
+  /boleto/authorize:
+    post:
+      tags:
+      - Pagamento de contas
+      summary: "Consultar dados do boleto (Necessário antes de pagar)"
+      description: "Retorna dados de um boleto"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Corpo da request"
+        required: true
+        schema:
+          $ref: "#/definitions/BoletoAuthorization"
+      responses:
+        "200": 
+          description: Resposta
+          schema:
+            $ref: "#/response/BoletoAuthorizationResponse"
+        "400": 
+          description: Dados inválidos
+        "404": 
+          description: Pagamento nao encontrado
+        "500":
+          description: Erro interno
+  /boleto/pay/{authorizationId}:
+    put:
+      tags:
+      - Pagamento de contas
+      summary: "Pagar o Boleto"
+      description: "Efetua o pagamento"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "authorizationId"
+        in: "path"
+        required: true
+        type: "string"
+      responses:
+        "200": 
+          description: Resposta
+          schema:
+            $ref: "#/response/BoletoPaymentResponse"
+        "400": 
+          description: Dados inválidos
+        "404": 
+          description: Pagamento nao encontrado
+        "500":
+          description: Erro interno
+
+  
 response:
   CardPaymentResponse:
     type: "object"
@@ -292,7 +341,7 @@ response:
           - rejected
           - canceled
           - in_dispute  
-      
+
   GetReceiptResponse:
     type: "object"
     required:
@@ -343,7 +392,7 @@ response:
           - rejected
           - canceled
           - in_dispute
-      
+
   CheckoutResponse:
     type: "object"
     required:
@@ -375,7 +424,7 @@ response:
           - processing
           - finished
           - expired
-          
+
   ConsultDetailResponse:
     type: "object"
     required:
@@ -390,7 +439,7 @@ response:
         description: "Débitos dos veículos"
         items:
           $ref: "#/response/DebitResponse"
-          
+
   ConsultAsyncResponse:
     type: "object"
     required:
@@ -412,7 +461,62 @@ response:
         type: 'string'
         description: 'ID do pagamento (Será usado no webhook para notificar alterações)'
   
-  
+  BoletoAuthorizationResponse:
+    type: "object"
+    properties:
+      id:
+        type: 'string'
+        description: 'ID da autorização do boleto que deve ser usado no pagamento'
+      originalAmount:
+        type: 'integer'
+        description: 'Valor original do boleto em centavos'
+      totalAmount:
+        type: 'integer'
+        description: 'Valor total do boleto em centavos'
+      discount:
+        type: 'integer'
+        description: 'Valor do desconto boleto em centavos'
+      interest:
+        type: 'integer'
+        description: 'Valor do juros boleto em centavos'
+      fine:
+        type: 'integer'
+        description: 'Valor da multa boleto em centavos'
+      dueDate:
+        type: 'string'
+        description: 'Data de vencimento do boleto'
+        example: 2020-01-01 10:00:00
+      recipient:
+        description: Dados do recebedor 
+        type: "object"
+        properties:
+          name:
+            type: string
+            description: Nome do recebedor
+          document:
+            type: string
+            description: CPF ou CNPJ mascarado do recebedor
+      payer:
+        description: Dados do pagador
+        type: "object"
+        properties:
+          name:
+            type: string
+            description: Nome do pagador
+          document:
+            type: string
+            description: CPF ou CNPJ mascarado do pagador
+
+  BoletoPaymentResponse:
+    type: "object"
+    properties:
+      id:
+        type: 'string'
+        description: 'ID da autorização do boleto que deve ser usado no pagamento'
+      receipt:
+        type: 'string'
+        description: 'PDF do recibo em base64'
+
   DebitResponse:
     type: "object"
     properties:
@@ -502,6 +606,16 @@ definitions:
         description: Token do cartão gerado com a SDK
       payer:
         $ref: "#/definitions/Payer"
+  
+  BoletoAuthorization:
+    type: object
+    properties:
+      barcode: 
+        type: "string"
+        description: "Código de barra"
+      digitable: 
+        type: "string"
+        description: "Linha digitável do boleto"
   
   PaymentVehicleDebit:
     type: object
