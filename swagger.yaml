@@ -1,6 +1,6 @@
 swagger: "2.0"
 info:
-  description: "Api para fazer checkout"
+  description: "Api backend"
   version: "1.0.0"
   title: "Checkout"
   contact:
@@ -92,70 +92,7 @@ paths:
           description: "Checkout já pago | Checkout já cancelado | Checkout ainda está sendo processado | Checkout está em contestação | Quantidade de parcelas excede o limite pré-definido"
         "500":
           description: "Server internal error"
-  /vehicle/consult-debit-async:
-    post:
-      tags:
-      - Débitos veiculares
-      summary: "Criar uma consulta de débitos"
-      description: "Essa consulta é assincrona, porém se os dados já estiverem disponíveis, retornaremos os dados nessa request"
-      consumes:
-      - "application/json"
-      produces:
-      - "application/json"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "Corpo da request"
-        required: true
-        schema:
-          $ref: "#/definitions/VehicularDebitSearchAsync"
-      responses:
-        "200": 
-          description: Resposta
-          schema:
-            $ref: "#/response/ConsultAsyncResponse"
-        "400": 
-          description: Dados inválidos
-        "500":
-          description: Erro interno
-  /vehicle/status-consult/{consultToken}:
-    get:
-      tags:
-      - Débitos veiculadores
-      summary: "Consultar o status de uma consulta"
-      description: "Usado para consultar se a consuta já está pront"
-      parameters:
-      - name: "consultToken"
-        in: "path"
-        required: true
-        type: "string"
-      responses:
-        "200": 
-          description: Resposta
-          schema:
-            $ref: "#/response/ConsultStatusResponse"
-  /vehicle/consult-detail/{consultToken}:
-    get:
-      tags:
-      - Débitos veiculadores
-      summary: "Consultar os detalhes da consulta"
-      description: "Usado para consultar os dados de uma consulta já pronta"
-      parameters:
-      - name: "consultToken"
-        in: "path"
-        required: true
-        type: "string"
-      responses:
-        "200": 
-          description: Resposta
-          schema:
-            $ref: "#/response/ConsultDetailResponse"
-        "404": 
-          description: Débito nao encontrado
-        "412": 
-          description: Débito ainda está processando 
-        "500": 
-          description: Erro interno
+  
   /checkout-change-status:
     post:
       tags:
@@ -182,81 +119,7 @@ paths:
       responses:
         "200": 
           description: Resposta
-  /payment-vehicular-debit-change-status:
-    post:
-      tags:
-      - "Notificação Webhook"
-      summary: "Notificar a alteração no pagamento de um débito veicular"
-      description: "Notificamos a alteração do status de um pagamento de dédito veicular"
-      consumes:
-      - "application/json"
-      produces:
-      - "application/json"
-      parameters:
-      - name: "Secret"
-        in: "header"
-        description: "notificationSecret que foi fornecido na criação do checkout"
-        required: false
-        type: "string"
-      - in: "body"
-        name: "body"
-        description: "Corpo da request que enviamos"
-        required: true
-        schema:
-          $ref: "#/definitions/WebhookVehicularDebit"
-      responses:
-        "200": 
-          description: Resposta
-  /vehicle/payment-debit:
-    post:
-      tags:
-      - Débitos veiculadores
-      summary: "Pagar débitos"
-      description: "Pagar os débitos veiculares <br> <b>Para gerar atualizar o documento é necessário pagar todos os débitos que estão marcados como required</b>"
-      consumes:
-      - "application/json"
-      produces:
-      - "application/json"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "Corpo da request"
-        required: true
-        schema:
-          $ref: "#/definitions/PaymentVehicleDebit"
-      responses:
-        "200": 
-          description: Resposta
-          schema:
-            $ref: "#/response/PaymentVehicleDebitResponse"
-        "400": 
-          description: Dados inválidos
-        "404": 
-          description: Pagamento nao encontrado
-        "500":
-          description: Erro interno
-  /vehicle/payment-debit/receipt/{paymentId}:
-    get:
-      tags:
-      - Débitos veiculadores
-      summary: "Consultar o recibo de um pagamento"
-      description: "Usado para consultar os dados de uma consulta já pronta"
-      parameters:
-      - name: "paymentId"
-        in: "path"
-        required: true
-        type: "string"
-      responses:
-        "200": 
-          description: Resposta
-          schema:
-            $ref: "#/response/GetReceiptResponse"
-        "404": 
-          description: Pagamento nao encontrado
-        "412": 
-          description: Pagamento ainda não está pago ou foi rejeitado, portanto não tem recibo
-        "500": 
-          description: Erro interno
+ 
   /boleto/authorize:
     post:
       tags:
@@ -300,6 +163,12 @@ paths:
         in: "path"
         required: true
         type: "string"
+      - name: "body"
+        in: "body"
+        description: "Corpo da request"
+        required: true
+        schema:
+          $ref: "#/definitions/BoletoPay"
       responses:
         "200": 
           description: Resposta
@@ -398,6 +267,7 @@ response:
     required:
       - id
       - paymentLink
+      - paymentMobileLink
     properties:
       id:
         type: "string"
@@ -405,61 +275,15 @@ response:
       paymentLink:
         type: "string"
         description: "Link da fatura"
+      paymentMobileLink:
+        type: "string"
+        description: "Link da fatura para Webview"
       qrCode:
         type: "string"
         description: "Conteúdo do QRCode"
       qrCodeJPEGBase64:
         type: "string"
         description: "Imagem (JPEG) do QRCode em Base64"
-  
-  ConsultStatusResponse:
-    type: "object"
-    required:
-      - status
-    properties:
-      status:
-        type: "string"
-        description: "Status da consulta"
-        enum:
-          - processing
-          - finished
-          - expired
-
-  ConsultDetailResponse:
-    type: "object"
-    required:
-      - plate
-      - debits
-    properties:
-      plate:
-        type: "string"
-        description: "Placa do veículo"
-      debits:
-        type: array
-        description: "Débitos dos veículos"
-        items:
-          $ref: "#/response/DebitResponse"
-
-  ConsultAsyncResponse:
-    type: "object"
-    required:
-      - tokenConsult
-    properties:
-      tokenConsult:
-        type: "string"
-        description: "Token usado para a consulta dos dados"
-      debits:
-        type: array
-        description: "Se os dados já estiverem disponíveis, será retornado nessa request, caso contrário retornará no somente quando a consulta estiver finalizada"
-        items:
-          $ref: "#/response/DebitResponse"
-  
-  PaymentVehicleDebitResponse:
-    type: "object"
-    properties:
-      id:
-        type: 'string'
-        description: 'ID do pagamento (Será usado no webhook para notificar alterações)'
   
   BoletoAuthorizationResponse:
     type: "object"
@@ -517,54 +341,6 @@ response:
         type: 'string'
         description: 'PDF do recibo em base64'
 
-  DebitResponse:
-    type: "object"
-    properties:
-      title:
-        type: "string"
-        description: "Titulo do débito"
-      amount:
-        type: "integer"
-        description: "Valor do débito em centavos"
-      description:
-        type: "string"
-        description: "Descrição do débito"
-      dueDate:
-        type: "string"
-        description: "data de vencimento do débito"
-        example: "2022-05-18 00:00:00"
-      fine:
-        type: "integer"
-        description: "Multa por atraso em centavos"
-      interest:
-        type: "integer"
-        description: "Juros em centavos"
-      discount:
-        type: "integer"
-        description: "Desconto em centavos"
-      type:
-        type: "string"
-        description: "tipo de débito"
-        enum:
-          - services
-          - ticket
-          - renainf_ticket
-          - ipva
-          - licensing
-          - ipva_unique
-          - ipva_installment
-          - insurance
-          - expired_insurance
-      year:
-        type: "string"
-        description: "Ano de referência do débito"
-      totalAmount:
-        type: "integer"
-        description: "Valor total dos débitos"
-      required:
-        type: "boolean"
-        description: "Se débito é necessário ser pago para gerar novo document"
-
 
 definitions:
   CardPayment:
@@ -616,6 +392,23 @@ definitions:
       digitable: 
         type: "string"
         description: "Linha digitável do boleto"
+        
+  BoletoPay:
+    type: object
+    properties:
+      payer: 
+        $ref: "#/definitions/PayerBoleto"
+  
+  PayerBoleto:
+    type: object
+    description: somente é necessário se estes dados não retornarem na autorização do Boleto
+    properties:
+      name: 
+        type: string
+        description: Nome
+      document: 
+        type: string
+        description: CPF ou CNPJ do pagador
   
   PaymentVehicleDebit:
     type: object
@@ -643,58 +436,6 @@ definitions:
         description: Array de ID dos débitos que deseja pagar
         items:
           type: integer
-      
-      
-  
-  VehicularDebitSearchAsync:
-    type: object
-    required:
-    - uf
-    - plate
-    - renavam
-    properties:
-      uf:
-        type: "string"
-        description: "Sigla do estado"
-        minLength: 2
-        maxLength: 2
-        example: "SP"
-      plate:
-        type: "string"
-        description: "Placa do veículo"
-      renavam:
-        type: "string"
-        description: "Renavam do veículo"
-  
-  WebhookVehicularDebit:
-    type: "object"
-    required:
-    - "id"
-    - "status"
-    - "action"
-    properties:
-      id:
-        type: string
-        description: ID do pagamento
-      status:
-        type: string
-        description: Status do pagamento
-        enum:
-          - processing
-          - paid
-          - rejected
-      statusDetail:
-        type: string
-        description: Detalhe da rejeição
-      action:
-        type: string
-        description: Ação
-        enum:
-          - payment_update
-          - checkout_update
-      receipt:
-        type: string 
-        description: PDF do recibo em base64
   
   Webhook:
     type: "object"
